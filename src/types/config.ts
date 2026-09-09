@@ -514,7 +514,6 @@ export interface DailyPigConfig {
 
 export interface PioConfig {
 	enable: boolean; // 是否启用看板娘
-	models?: string[]; // 模型文件路径数组（支持 .model.json 和 .model3.json）
 	image?: string; // 静态看板娘图片路径
 	dailyPig?: DailyPigConfig; // 今日小猪弹窗
 	animation?: {
@@ -523,28 +522,12 @@ export interface PioConfig {
 	};
 	position?: "left" | "right"; // 看板娘位置
 	width?: number; // 看板娘宽度
-	height?: number; // 看板娘高度
-	mode?: "static" | "fixed" | "draggable"; // 展现模式
 	hiddenOnMobile?: boolean; // 是否在移动设备上隐藏
-	hideAboutMenu?: boolean; // 是否隐藏内置 About 菜单按钮
 	dialog?: {
 		welcome?: string | string[]; // 欢迎词
 		touch?: string | string[]; // 触摸提示
-		home?: string; // 首页提示
-		skin?: [string, string]; // 换装提示 [切换前, 切换后]
 		close?: string; // 关闭提示
 		link?: string; // 关于链接
-		custom?: {
-			selector: string; // CSS选择器
-			type: "read" | "link"; // 类型
-			text?: string; // 自定义文本
-		}[];
-	};
-	tips?: {
-		welcomeMessage?: string[]; // 欢迎语
-		messages?: string[]; // 循环提示内容
-		duration?: number; // 每条 tips 展示时长（ms）
-		interval?: number; // tips 循环间隔（ms）
 	};
 	menus?: {
 		items?: {
@@ -552,7 +535,6 @@ export interface PioConfig {
 			label: string; // 无障碍标题
 			action: string; // 预定义动作名称
 		}[];
-		align?: "left" | "right"; // 菜单对齐方式
 	};
 }
 

@@ -58,8 +58,32 @@ export default defineConfig({
 				{
 					name: "JetBrains Mono",
 					cssVariable: "--font-jetbrains-mono",
-					provider: fontProviders.fontsource(),
-					styles: ["normal", "italic"],
+					// 改用本地字体：构建期从 CDN 拉取会偶发超时导致整个构建失败
+					provider: fontProviders.local(),
+					options: {
+						variants: [
+							{
+								src: ["./src/assets/fonts/JetBrainsMono-400-normal.woff2"],
+								weight: "400",
+								style: "normal",
+							},
+							{
+								src: ["./src/assets/fonts/JetBrainsMono-400-italic.woff2"],
+								weight: "400",
+								style: "italic",
+							},
+							{
+								src: ["./src/assets/fonts/JetBrainsMono-700-normal.woff2"],
+								weight: "700",
+								style: "normal",
+							},
+							{
+								src: ["./src/assets/fonts/JetBrainsMono-700-italic.woff2"],
+								weight: "700",
+								style: "italic",
+							},
+						],
+					},
 				},
 				{
 					name: "ZenMaruGothic-Medium",

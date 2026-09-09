@@ -424,4 +424,5 @@ export const ja: Translation = {
 	[Key.aiRadarUpdated]: "更新",
 	[Key.aiRadarLoading]: "読み込み中…",
 	[Key.aiRadarUnavailable]: "利用不可",
+	[Key.aiRadarCodex]: "Codex 知能効率ランキング",
 };

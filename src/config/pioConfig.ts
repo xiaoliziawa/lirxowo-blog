@@ -1,6 +1,6 @@
 import type { PioConfig } from "../types/config";
 
-// Pio 看板娘配置
+// 看板娘配置
 export const pioConfig: PioConfig = {
 	enable: true,
 	image: "/assets/home/pig-mascot-idle.webp",
@@ -18,15 +18,10 @@ export const pioConfig: PioConfig = {
 	},
 	position: "left",
 	width: 160,
-	height: 250,
-	mode: "draggable",
 	hiddenOnMobile: true,
-	hideAboutMenu: false,
 	dialog: {
 		welcome: "欢迎来到 LirxOwO 的小窝！",
 		touch: "哼哼~",
-		home: "点击这里回到首页",
-		skin: ["要看看我的新造型吗？", "这套也很可爱吧～"],
 		close: "下次再见啦 QWQ",
 		link: "/about/",
 	},

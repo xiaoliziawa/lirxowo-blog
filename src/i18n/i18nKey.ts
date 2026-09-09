@@ -399,6 +399,7 @@ enum I18nKey {
 	aiRadarUpdated = "aiRadarUpdated",
 	aiRadarLoading = "aiRadarLoading",
 	aiRadarUnavailable = "aiRadarUnavailable",
+	aiRadarCodex = "aiRadarCodex",
 }
 
 export default I18nKey;

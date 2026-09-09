@@ -17,6 +17,12 @@ const STORY_MIN_POINTS = 20;
 const STORY_PER_QUERY = 12;
 const STORY_LIMIT = 8;
 
+const CODEX_RADAR_URL =
+	"https://codexradar.com/data/intelligence-efficiency.json";
+// 运行次数过少的样本 IQ 波动极大，排行里排除掉
+const CODEX_MIN_RUNS = 10;
+const CODEX_LIMIT = 60;
+
 const MODEL_LIMIT = 8;
 const REPO_WINDOW_DAYS = 14;
 const REPO_LIMIT = 6;
@@ -126,12 +132,38 @@ async function fetchRepos() {
 	}));
 }
 
+async function fetchCodex() {
+	const data = await getJson(CODEX_RADAR_URL);
+	const points = (data.points ?? [])
+		.filter(
+			(point) =>
+				Number(point.total_runs) >= CODEX_MIN_RUNS &&
+				Number.isFinite(Number(point.iq)),
+		)
+		.sort((a, b) => Number(b.iq) - Number(a.iq))
+		.slice(0, CODEX_LIMIT)
+		.map((point) => ({
+			model: point.model,
+			effort: point.effort,
+			iq: Number(point.iq),
+			price: Number(point.average_price_usd),
+			minutes: Number(point.average_minutes),
+			runs: Number(point.total_runs),
+		}));
+
+	if (points.length === 0) {
+		throw new Error("no codex points");
+	}
+	return { sourceUpdatedAt: data.source_updated_at ?? null, points };
+}
+
 async function main() {
 	const sections = {
 		status: fetchStatus,
 		stories: fetchStories,
 		models: fetchModels,
 		repos: fetchRepos,
+		codex: fetchCodex,
 	};
 
 	const payload = { updatedAt: new Date().toISOString(), errors: [] };
@@ -157,7 +189,11 @@ async function main() {
 	await fs.rename(temp, target);
 
 	const counts = Object.keys(sections)
-		.map((key) => `${key}=${payload[key] ? (payload[key].length ?? 1) : "×"}`)
+		.map((key) => {
+			const value = payload[key];
+			if (!value) return `${key}=×`;
+			return `${key}=${Array.isArray(value) ? value.length : (value.points?.length ?? 1)}`;
+		})
 		.join(" ");
 	console.log(`✅ ${counts}`);
 	if (payload.errors.length > 0) {

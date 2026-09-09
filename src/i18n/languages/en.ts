@@ -421,4 +421,5 @@ export const en: Translation = {
 	[Key.aiRadarUpdated]: "Updated",
 	[Key.aiRadarLoading]: "Loading…",
 	[Key.aiRadarUnavailable]: "Unavailable",
+	[Key.aiRadarCodex]: "Codex Intelligence Efficiency",
 };

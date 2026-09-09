@@ -3,6 +3,16 @@ const REFRESH_INTERVAL_MS = 20 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 
+// 推理强度由低到高，配色递进
+const EFFORT_TONE = {
+	low: "bg-neutral-500/15 text-neutral-500",
+	medium: "bg-green-500/15 text-green-600 dark:text-green-400",
+	high: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+	xhigh: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+	max: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+	ultra: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+};
+
 const STATUS_TONE = {
 	none: "bg-green-500",
 	minor: "bg-yellow-500",
@@ -140,12 +150,58 @@ export function initAiRadar() {
 			.join("")}</div>`;
 	};
 
+	const renderCodex = (codex) => {
+		if (!codex?.points?.length) return unavailable();
+		const maxIq = Math.max(...codex.points.map((point) => point.iq));
+		const rows = codex.points
+			.map(
+				(point) => `
+			<tr class="border-t border-(--line-divider)">
+				<td class="py-2 pr-3 font-bold text-black/80 dark:text-white/80">${escapeHtml(point.model)}</td>
+				<td class="py-2 pr-3">
+					<span class="rounded-md px-2 py-0.5 text-xs font-bold ${EFFORT_TONE[point.effort] ?? EFFORT_TONE.low}">${escapeHtml(point.effort)}</span>
+				</td>
+				<td class="py-2 pr-3 whitespace-nowrap">
+					<span class="mr-2 font-bold tabular-nums">${point.iq.toFixed(1)}</span>
+					<span class="inline-block h-1.5 w-16 rounded-full bg-black/10 align-middle dark:bg-white/10">
+						<span class="block h-full rounded-full bg-(--primary)" style="width:${Math.max(4, Math.round((point.iq / maxIq) * 100))}%"></span>
+					</span>
+				</td>
+				<td class="py-2 pr-3 text-right tabular-nums">$${point.price.toFixed(2)}</td>
+				<td class="py-2 pr-3 text-right tabular-nums">${point.minutes.toFixed(1)}m</td>
+				<td class="py-2 text-right tabular-nums text-black/35 dark:text-white/35">${point.runs}</td>
+			</tr>`,
+			)
+			.join("");
+
+		return `
+		<div class="max-h-[32rem] overflow-auto">
+			<table class="w-full min-w-[34rem] text-sm">
+				<thead class="sticky top-0 bg-(--card-bg)">
+					<tr class="text-xs text-black/45 dark:text-white/45">
+						<th class="pb-2 pr-3 text-left font-normal">模型</th>
+						<th class="pb-2 pr-3 text-left font-normal">推理强度</th>
+						<th class="pb-2 pr-3 text-left font-normal">智力 IQ</th>
+						<th class="pb-2 pr-3 text-right font-normal">平均价格</th>
+						<th class="pb-2 pr-3 text-right font-normal">平均耗时</th>
+						<th class="pb-2 text-right font-normal">运行次数</th>
+					</tr>
+				</thead>
+				<tbody class="text-black/70 dark:text-white/70">${rows}</tbody>
+			</table>
+		</div>
+		<p class="mt-2 text-xs text-black/35 dark:text-white/35">
+			数据来源 codexradar.com · IQ = 任务通过率 × 150 · 仅列出运行次数 ≥ 10 的样本
+		</p>`;
+	};
+
 	const render = (data) => {
 		body.innerHTML = [
 			section(labels.status, renderStatus(data.status)),
 			section(labels.stories, renderStories(data.stories)),
 			section(labels.models, renderModels(data.models)),
 			section(labels.repos, renderRepos(data.repos)),
+			section(labels.codex, renderCodex(data.codex)),
 		].join("");
 		updated.textContent = `${labels.updated} ${relativeTime(data.updatedAt)}`;
 	};

@@ -18,7 +18,6 @@ export const WIDGET_COMPONENT_MAP = {
 	"music-player": "../components/widgets/music-player/MusicPlayer.svelte",
 	"music-sidebar":
 		"../components/widgets/music-sidebar/MusicSidebarWidget.astro",
-	pio: "../components/widget/Pio.astro",
 	"site-stats": "../components/widgets/site-stats/SiteStats.astro",
 	calendar: "../components/widgets/calendar/Calendar.astro",
 	custom: null,
