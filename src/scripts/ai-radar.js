@@ -175,7 +175,7 @@ export function initAiRadar() {
 			.join("");
 
 		return `
-		<div class="max-h-[32rem] overflow-auto">
+		<div class="codex-scroll max-h-[32rem] overflow-auto pr-3">
 			<table class="w-full min-w-[34rem] text-sm">
 				<thead class="sticky top-0 bg-(--card-bg)">
 					<tr class="text-xs text-black/45 dark:text-white/45">

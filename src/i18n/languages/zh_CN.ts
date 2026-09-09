@@ -407,5 +407,5 @@ export const zh_CN: Translation = {
 	[Key.aiRadarUpdated]: "更新于",
 	[Key.aiRadarLoading]: "加载中…",
 	[Key.aiRadarUnavailable]: "暂不可用",
-	[Key.aiRadarCodex]: "Codex 智力效率排行",
+	[Key.aiRadarCodex]: "模型智力效率排行",
 };

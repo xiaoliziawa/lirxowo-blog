@@ -409,5 +409,5 @@ export const zh_TW: Translation = {
 	[Key.aiRadarUpdated]: "更新於",
 	[Key.aiRadarLoading]: "載入中…",
 	[Key.aiRadarUnavailable]: "暫不可用",
-	[Key.aiRadarCodex]: "Codex 智力效率排行",
+	[Key.aiRadarCodex]: "模型智力效率排行",
 };

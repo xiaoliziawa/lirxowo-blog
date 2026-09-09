@@ -82,3 +82,28 @@ const labels = {
 		}
 	}
 </style>
+
+<style is:global>
+	/* 表格由脚本动态插入，拿不到 Astro 的作用域属性，只能用 is:global 并手动限定范围 */
+	#ai-radar .codex-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: var(--scrollbar-bg) transparent;
+	}
+	#ai-radar .codex-scroll::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+	#ai-radar .codex-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	#ai-radar .codex-scroll::-webkit-scrollbar-thumb {
+		background: var(--scrollbar-bg);
+		border-radius: 4px;
+	}
+	#ai-radar .codex-scroll::-webkit-scrollbar-thumb:hover {
+		background: var(--scrollbar-bg-hover);
+	}
+	#ai-radar .codex-scroll::-webkit-scrollbar-thumb:active {
+		background: var(--scrollbar-bg-active);
+	}
+</style>
