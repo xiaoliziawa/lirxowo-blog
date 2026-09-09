@@ -1,0 +1,291 @@
+---
+import { Icon } from "astro-icon/components";
+import type { PioConfig } from "@/types/config";
+
+interface Props {
+	config: PioConfig;
+}
+
+const { config } = Astro.props;
+
+const image = config.image ?? "/assets/home/pig-mascot.webp";
+const width = config.width ?? 160;
+const isRight = config.position === "right";
+const hiddenOnMobile = config.hiddenOnMobile ?? true;
+
+const toList = (value?: string | string[]) =>
+	value ? (Array.isArray(value) ? value : [value]) : [];
+
+const messages = {
+	welcome: toList(config.dialog?.welcome),
+	touch: toList(config.dialog?.touch),
+	close: config.dialog?.close ?? "",
+};
+
+const menuItems = config.menus?.items ?? [];
+const aboutLink = config.dialog?.link ?? "/about/";
+const animation = config.animation;
+---
+
+<div
+	id="pig-mascot"
+	class:list={[
+		"fixed bottom-0 z-[999] flex-col p-3 select-none pointer-events-none",
+		isRight ? "right-0 items-end" : "left-0 items-start",
+		hiddenOnMobile ? "hidden md:flex" : "flex",
+	]}
+	data-messages={JSON.stringify(messages)}
+	data-about-link={aboutLink}
+	data-still={image}
+	data-animation={animation?.image}
+	data-animation-duration={animation?.duration}
+>
+	<div
+		id="pig-mascot-bubble"
+		class="card-base mb-2 max-w-52 px-3 py-2 text-sm leading-relaxed text-center
+		text-black/75 dark:text-white/75 shadow-lg opacity-0 translate-y-1
+		transition-all duration-300"
+	>
+	</div>
+	<div class="group relative pointer-events-auto">
+		{
+			menuItems.length > 0 && (
+				<div
+					class:list={[
+						"absolute top-1/2 -translate-y-1/2 z-10 flex flex-col gap-1.5",
+						"opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+						isRight ? "left-0 -translate-x-full" : "right-0 translate-x-full",
+					]}
+				>
+					{menuItems.map((item) => (
+						<button
+							class="card-base flex h-8 w-8 items-center justify-center rounded-full
+							text-black/60 dark:text-white/60 shadow-md transition
+							hover:text-(--primary) active:scale-90"
+							aria-label={item.label}
+							title={item.label}
+							data-action={item.action}
+						>
+							<Icon
+								name={item.icon ?? "mdi:circle-medium"}
+								class="text-[1.05rem]"
+							/>
+						</button>
+					))}
+				</div>
+			)
+		}
+		<img
+			id="pig-mascot-image"
+			src={image}
+			alt=""
+			style={`width: ${width}px`}
+			class="cursor-pointer drop-shadow-lg"
+			draggable="false"
+		/>
+	</div>
+</div>
+
+<button
+	id="pig-mascot-restore"
+	aria-label="Show mascot"
+	class:list={[
+		"card-base fixed bottom-3 z-[999] hidden h-11 w-11 items-center justify-center",
+		"rounded-full shadow-lg transition active:scale-90",
+		isRight ? "right-3" : "left-3",
+	]}
+>
+	<img src={image} alt="" class="h-7 w-7 object-contain" />
+</button>
+
+<style>
+	#pig-mascot-image {
+		animation: pig-mascot-bob 3.2s ease-in-out infinite;
+	}
+
+	/* 播放动画时停掉呼吸效果，避免和动画自身的位移叠加 */
+	#pig-mascot-image.is-playing {
+		animation: none;
+	}
+
+	@keyframes pig-mascot-bob {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-6px);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#pig-mascot-image {
+			animation: none;
+		}
+	}
+</style>
+
+<script>
+	const SLEEP_KEY = "pigMascotAsleep";
+	const BUBBLE_DURATION = 4000;
+	const WELCOME_DELAY = 800;
+	const SLEEP_DELAY = 1200;
+
+	const win = window as Window & { __pigMascotInit?: boolean };
+
+	function initPigMascot() {
+		const root = document.getElementById("pig-mascot");
+		const restore = document.getElementById("pig-mascot-restore");
+		if (!root || !restore) return;
+
+		const bubble = document.getElementById("pig-mascot-bubble");
+		const image = document.getElementById(
+			"pig-mascot-image",
+		) as HTMLImageElement | null;
+		const messages = JSON.parse(root.dataset.messages || "{}");
+		const aboutLink = root.dataset.aboutLink || "/about/";
+		const stillSrc = root.dataset.still || "";
+		const animationSrc = root.dataset.animation || "";
+		const animationDuration = Number(root.dataset.animationDuration) || 0;
+
+		let hideTimer: number | undefined;
+
+		const say = (text: string) => {
+			if (!text || !bubble) return;
+			bubble.textContent = text;
+			bubble.classList.remove("opacity-0", "translate-y-1");
+			window.clearTimeout(hideTimer);
+			hideTimer = window.setTimeout(() => {
+				bubble.classList.add("opacity-0", "translate-y-1");
+			}, BUBBLE_DURATION);
+		};
+
+		const pick = (list: string[]) =>
+			list[Math.floor(Math.random() * list.length)];
+
+		// 动画只下载一次；每次播放用新的 object URL，否则同一地址不会从第一帧重放
+		let animationBlob: Blob | null = null;
+		let animationRequest: Promise<Blob | null> | null = null;
+		let playing = false;
+		let playingUrl: string | null = null;
+
+		const loadAnimation = () => {
+			if (!animationSrc) return Promise.resolve(null);
+			if (animationBlob) return Promise.resolve(animationBlob);
+			if (!animationRequest) {
+				animationRequest = fetch(animationSrc)
+					.then((response) => (response.ok ? response.blob() : null))
+					.then((blob) => {
+						animationBlob = blob;
+						return blob;
+					})
+					.catch(() => null);
+			}
+			return animationRequest;
+		};
+
+		const releasePlayingUrl = () => {
+			if (playingUrl) {
+				URL.revokeObjectURL(playingUrl);
+				playingUrl = null;
+			}
+		};
+
+		const playAnimation = async () => {
+			if (!image || !animationSrc || !animationDuration) return;
+			const blob = await loadAnimation();
+			releasePlayingUrl();
+			if (blob) {
+				playingUrl = URL.createObjectURL(blob);
+				image.src = playingUrl;
+			} else {
+				image.src = `${animationSrc}?t=${Date.now()}`;
+			}
+			image.classList.add("is-playing");
+
+			window.setTimeout(() => {
+				image.src = stillSrc;
+				image.classList.remove("is-playing");
+				releasePlayingUrl();
+				playing = false;
+			}, animationDuration);
+		};
+
+		const setAsleep = (asleep: boolean) => {
+			root.style.display = asleep ? "none" : "";
+			restore.classList.toggle("hidden", !asleep);
+			restore.classList.toggle("flex", asleep);
+			try {
+				if (asleep) {
+					sessionStorage.setItem(SLEEP_KEY, "1");
+				} else {
+					sessionStorage.removeItem(SLEEP_KEY);
+				}
+			} catch {
+				/* sessionStorage 不可用时仅本次生效 */
+			}
+		};
+
+		const actions: Record<string, () => void> = {
+			sleep: () => {
+				say(messages.close);
+				window.setTimeout(() => setAsleep(true), SLEEP_DELAY);
+			},
+			about: () => {
+				window.location.href = aboutLink;
+			},
+			home: () => {
+				window.location.href = "/";
+			},
+			scrollToTop: () => window.scrollTo({ top: 0, behavior: "smooth" }),
+			daily: () =>
+				document.dispatchEvent(new CustomEvent("daily-pig:open")),
+		};
+
+		for (const button of root.querySelectorAll<HTMLElement>("[data-action]")) {
+			button.addEventListener("click", () => {
+				actions[button.dataset.action ?? ""]?.();
+			});
+		}
+
+		restore.addEventListener("click", () => {
+			setAsleep(false);
+			if (messages.welcome?.length) say(pick(messages.welcome));
+		});
+
+		// 悬停时预取动画，首次点击不用等下载
+		image?.addEventListener("mouseenter", loadAnimation);
+
+		image?.addEventListener("click", () => {
+			if (playing) return;
+			playing = true;
+			if (messages.touch?.length) say(pick(messages.touch));
+			if (animationSrc && animationDuration) {
+				playAnimation();
+			} else {
+				playing = false;
+			}
+		});
+
+		let wasAsleep = false;
+		try {
+			wasAsleep = sessionStorage.getItem(SLEEP_KEY) === "1";
+		} catch {
+			/* 读取失败按未休眠处理 */
+		}
+
+		if (wasAsleep) {
+			setAsleep(true);
+			return;
+		}
+
+		if (messages.welcome?.length) {
+			window.setTimeout(() => say(pick(messages.welcome)), WELCOME_DELAY);
+		}
+	}
+
+	if (!win.__pigMascotInit) {
+		win.__pigMascotInit = true;
+		initPigMascot();
+	}
+</script>

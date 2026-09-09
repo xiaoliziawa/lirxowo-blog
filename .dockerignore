@@ -1,0 +1,12 @@
+.git
+.github
+.vscode
+.claude
+node_modules
+dist
+.astro
+cache
+*.log
+.env*
+README*.md
+docs

@@ -1,0 +1,410 @@
+---
+import { Icon } from "astro-icon/components";
+import type { DailyPigConfig } from "@/types/config";
+
+interface Props {
+	config: DailyPigConfig;
+}
+
+const { config } = Astro.props;
+---
+
+<div
+	id="daily-pig"
+	class="fixed inset-0 z-[1000] hidden items-center justify-center p-4"
+	data-data-url={config.data}
+	data-image-base={config.imageBase}
+	role="dialog"
+	aria-modal="true"
+	aria-label={config.title}
+>
+	<div id="daily-pig-backdrop" class="absolute inset-0 bg-black/60"></div>
+
+	<div
+		class="card-base relative z-10 flex max-h-full w-full max-w-md flex-col overflow-hidden shadow-2xl"
+	>
+		<div
+			class="flex items-center justify-between border-b border-(--line-divider) px-4 py-3"
+		>
+			<span class="font-bold text-black/85 dark:text-white/85">
+				{config.title}
+			</span>
+			<button
+				id="daily-pig-close"
+				aria-label="Close"
+				class="btn-plain h-8 w-8 rounded-lg active:scale-90"
+			>
+				<Icon name="material-symbols:close-rounded" class="text-[1.15rem]" />
+			</button>
+		</div>
+
+		<div class="relative flex-1 overflow-y-auto p-4">
+			<div
+				id="daily-pig-loading"
+				class="flex h-64 items-center justify-center text-sm text-neutral-400"
+			>
+				{config.loading}
+			</div>
+			<canvas
+				id="daily-pig-canvas"
+				width="800"
+				height="800"
+				class="mx-auto hidden w-full max-w-sm rounded-lg"></canvas>
+		</div>
+
+		<div class="border-t border-(--line-divider) px-4 py-3">
+			<button
+				id="daily-pig-download"
+				class="btn-regular h-10 w-full rounded-lg font-bold active:scale-95"
+			>
+				{config.download}
+			</button>
+		</div>
+	</div>
+
+	<canvas
+		id="daily-pig-confetti"
+		class="pointer-events-none absolute inset-0 z-20"></canvas>
+</div>
+
+<script>
+	const STORAGE_KEY = "dailyPig";
+	const OPEN_EVENT = "daily-pig:open";
+	const REVOKE_DELAY = 10000;
+
+	// 画布布局，沿用 rollpig 插件的比例
+	const CANVAS_SIZE = 800;
+	const AVATAR_SIZE = 280;
+	const GAP_AVATAR_NAME = 20;
+	const GAP_NAME_DESC = 25;
+	const GAP_DESC_ANALYSIS = 30;
+	const NAME_FONT_SIZE = 66;
+	const DESC_FONT_SIZE = 32;
+	const ANALYSIS_FONT_SIZE = 28;
+	const ANALYSIS_LINE_HEIGHT = 1.6;
+	const ANALYSIS_WIDTH_RATIO = 0.85;
+	const FONT_STACK =
+		'"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif';
+
+	// 礼花参数：左右两侧底部朝中间斜射，形成交叉喷泉
+	const CONFETTI_COUNT = 70;
+	const CONFETTI_GRAVITY = 0.34;
+	const CONFETTI_DRAG = 0.996;
+	const CONFETTI_DRAG_COMPENSATION = 1.16;
+	const CONFETTI_ANGLE_MIN = 38;
+	const CONFETTI_ANGLE_MAX = 56;
+	const CONFETTI_REACH_MIN = 0.55;
+	const CONFETTI_REACH_MAX = 0.95;
+	const CONFETTI_ORIGIN_Y = 0.98;
+	const CONFETTI_LIFE = 240;
+	const CONFETTI_FADE = 45;
+	const CONFETTI_COLORS = [
+		"#f7630c",
+		"#e6508f",
+		"#ffd2b1",
+		"#ff7d86",
+		"#4ec9b0",
+		"#ffd166",
+	];
+
+	type Pig = {
+		id: string;
+		name: string;
+		description: string;
+		analysis: string;
+	};
+
+	type Particle = {
+		x: number;
+		y: number;
+		vx: number;
+		vy: number;
+		size: number;
+		color: string;
+		angle: number;
+		spin: number;
+		life: number;
+	};
+
+	const win = window as Window & { __dailyPigInit?: boolean };
+
+	function initDailyPig() {
+		const root = document.getElementById("daily-pig");
+		const canvas = document.getElementById(
+			"daily-pig-canvas",
+		) as HTMLCanvasElement | null;
+		const confetti = document.getElementById(
+			"daily-pig-confetti",
+		) as HTMLCanvasElement | null;
+		if (!root || !canvas || !confetti) return;
+
+		const loading = document.getElementById("daily-pig-loading");
+		const closeButton = document.getElementById("daily-pig-close");
+		const backdrop = document.getElementById("daily-pig-backdrop");
+		const downloadButton = document.getElementById("daily-pig-download");
+		const dataUrl = root.dataset.dataUrl || "";
+		const imageBase = root.dataset.imageBase || "";
+
+		let pigs: Pig[] | null = null;
+		let pigsRequest: Promise<Pig[] | null> | null = null;
+		let currentPig: Pig | null = null;
+		let confettiFrame = 0;
+
+		const today = () => new Date().toLocaleDateString("sv");
+
+		const loadPigs = () => {
+			if (pigs) return Promise.resolve(pigs);
+			if (!pigsRequest) {
+				pigsRequest = fetch(dataUrl)
+					.then((response) => (response.ok ? response.json() : null))
+					.then((list: Pig[] | null) => {
+						pigs = list;
+						return list;
+					})
+					.catch(() => null);
+			}
+			return pigsRequest;
+		};
+
+		// 当天首次抽取后写入 localStorage，同一天重复打开结果不变
+		const resolveTodayPig = (list: Pig[]) => {
+			const date = today();
+			try {
+				const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+				if (saved.date === date) {
+					const found = list.find((pig) => pig.id === saved.id);
+					if (found) return found;
+				}
+			} catch {
+				/* 读取失败则重新抽取 */
+			}
+			const picked = list[Math.floor(Math.random() * list.length)];
+			try {
+				localStorage.setItem(
+					STORAGE_KEY,
+					JSON.stringify({ date, id: picked.id }),
+				);
+			} catch {
+				/* 无法持久化时仅本次有效 */
+			}
+			return picked;
+		};
+
+		const wrapText = (
+			ctx: CanvasRenderingContext2D,
+			text: string,
+			maxWidth: number,
+		) => {
+			const lines: string[] = [];
+			let line = "";
+			for (const char of text) {
+				const next = line + char;
+				if (ctx.measureText(next).width > maxWidth && line) {
+					lines.push(line);
+					line = char;
+				} else {
+					line = next;
+				}
+			}
+			if (line) lines.push(line);
+			return lines;
+		};
+
+		const draw = (pig: Pig, avatar: HTMLImageElement | null) => {
+			const ctx = canvas.getContext("2d");
+			if (!ctx) return;
+
+			ctx.fillStyle = "#ffffff";
+			ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+			ctx.textBaseline = "top";
+			ctx.textAlign = "center";
+
+			ctx.font = `${ANALYSIS_FONT_SIZE}px ${FONT_STACK}`;
+			const analysisLines = wrapText(
+				ctx,
+				pig.analysis,
+				CANVAS_SIZE * ANALYSIS_WIDTH_RATIO,
+			);
+			const lineHeight = ANALYSIS_FONT_SIZE * ANALYSIS_LINE_HEIGHT;
+
+			const totalHeight =
+				AVATAR_SIZE +
+				GAP_AVATAR_NAME +
+				NAME_FONT_SIZE +
+				GAP_NAME_DESC +
+				DESC_FONT_SIZE +
+				GAP_DESC_ANALYSIS +
+				analysisLines.length * lineHeight;
+
+			const center = CANVAS_SIZE / 2;
+			let y = (CANVAS_SIZE - totalHeight) / 2;
+
+			if (avatar) {
+				ctx.drawImage(
+					avatar,
+					center - AVATAR_SIZE / 2,
+					y,
+					AVATAR_SIZE,
+					AVATAR_SIZE,
+				);
+			}
+			y += AVATAR_SIZE + GAP_AVATAR_NAME;
+
+			ctx.fillStyle = "#000000";
+			ctx.font = `bold ${NAME_FONT_SIZE}px ${FONT_STACK}`;
+			ctx.fillText(pig.name, center, y);
+			y += NAME_FONT_SIZE + GAP_NAME_DESC;
+
+			ctx.fillStyle = "#555555";
+			ctx.font = `${DESC_FONT_SIZE}px ${FONT_STACK}`;
+			ctx.fillText(pig.description, center, y);
+			y += DESC_FONT_SIZE + GAP_DESC_ANALYSIS;
+
+			ctx.fillStyle = "#333333";
+			ctx.font = `${ANALYSIS_FONT_SIZE}px ${FONT_STACK}`;
+			for (const line of analysisLines) {
+				ctx.fillText(line, center, y);
+				y += lineHeight;
+			}
+		};
+
+		const loadAvatar = (id: string) =>
+			new Promise<HTMLImageElement | null>((resolve) => {
+				const img = new Image();
+				img.onload = () => resolve(img);
+				img.onerror = () => resolve(null);
+				img.src = `${imageBase}${id}.webp`;
+			});
+
+		const spawnConfetti = () => {
+			const ctx = confetti.getContext("2d");
+			if (!ctx) return;
+
+			const ratio = window.devicePixelRatio || 1;
+			const width = root.clientWidth;
+			const height = root.clientHeight;
+			confetti.width = width * ratio;
+			confetti.height = height * ratio;
+			ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+			const particles: Particle[] = [];
+			const random = (min: number, max: number) =>
+				min + Math.random() * (max - min);
+
+			for (const side of [0, 1]) {
+				const inward = side === 0 ? 1 : -1;
+				for (let i = 0; i < CONFETTI_COUNT; i += 1) {
+					const angle =
+						random(CONFETTI_ANGLE_MIN, CONFETTI_ANGLE_MAX) * (Math.PI / 180);
+					const reach =
+						width * random(CONFETTI_REACH_MIN, CONFETTI_REACH_MAX);
+					// 由目标射程反推初速：R = v²·sin(2θ)/g，再补偿空气阻力
+					const speed =
+						Math.sqrt((reach * CONFETTI_GRAVITY) / Math.sin(2 * angle)) *
+						CONFETTI_DRAG_COMPENSATION;
+					particles.push({
+						x: side === 0 ? 0 : width,
+						y: height * CONFETTI_ORIGIN_Y,
+						vx: Math.cos(angle) * speed * inward,
+						vy: -Math.sin(angle) * speed,
+						size: 6 + Math.random() * 7,
+						color:
+							CONFETTI_COLORS[
+								Math.floor(Math.random() * CONFETTI_COLORS.length)
+							],
+						angle: Math.random() * Math.PI,
+						spin: (Math.random() - 0.5) * 0.3,
+						life: CONFETTI_LIFE,
+					});
+				}
+			}
+
+			window.cancelAnimationFrame(confettiFrame);
+			const step = () => {
+				ctx.clearRect(0, 0, width, height);
+				let alive = false;
+				for (const p of particles) {
+					if (p.life <= 0) continue;
+					alive = true;
+					p.life -= 1;
+					p.vy += CONFETTI_GRAVITY;
+					p.vx *= CONFETTI_DRAG;
+					p.x += p.vx;
+					p.y += p.vy;
+					p.angle += p.spin;
+					if (p.y > height + p.size * 2) {
+						p.life = 0;
+						continue;
+					}
+
+					ctx.save();
+					ctx.translate(p.x, p.y);
+					ctx.rotate(p.angle);
+					ctx.globalAlpha = Math.min(1, p.life / CONFETTI_FADE);
+					ctx.fillStyle = p.color;
+					ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+					ctx.restore();
+				}
+				if (alive) confettiFrame = window.requestAnimationFrame(step);
+				else ctx.clearRect(0, 0, width, height);
+			};
+			confettiFrame = window.requestAnimationFrame(step);
+		};
+
+		const close = () => {
+			root.classList.add("hidden");
+			root.classList.remove("flex");
+			window.cancelAnimationFrame(confettiFrame);
+		};
+
+		const open = async () => {
+			root.classList.remove("hidden");
+			root.classList.add("flex");
+			loading?.classList.remove("hidden");
+			canvas.classList.add("hidden");
+
+			const list = await loadPigs();
+			if (!list?.length) {
+				if (loading) loading.textContent = "😢";
+				return;
+			}
+
+			currentPig = resolveTodayPig(list);
+			const avatar = await loadAvatar(currentPig.id);
+			if (document.fonts?.ready) await document.fonts.ready;
+			draw(currentPig, avatar);
+
+			loading?.classList.add("hidden");
+			canvas.classList.remove("hidden");
+			spawnConfetti();
+		};
+
+		closeButton?.addEventListener("click", close);
+		backdrop?.addEventListener("click", close);
+		document.addEventListener("keydown", (event) => {
+			if (event.key === "Escape" && !root.classList.contains("hidden")) close();
+		});
+
+		downloadButton?.addEventListener("click", () => {
+			canvas.toBlob((blob) => {
+				if (!blob) return;
+				const url = URL.createObjectURL(blob);
+				const link = document.createElement("a");
+				link.href = url;
+				link.download = `${currentPig?.name ?? "pig"}-${today()}.png`;
+				// 挂到 DOM 再点击，并延后回收 URL：立即回收会让部分浏览器取消下载
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+				window.setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY);
+			}, "image/png");
+		});
+
+		document.addEventListener(OPEN_EVENT, open);
+	}
+
+	if (!win.__dailyPigInit) {
+		win.__dailyPigInit = true;
+		initDailyPig();
+	}
+</script>

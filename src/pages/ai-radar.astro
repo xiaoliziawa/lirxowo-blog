@@ -1,0 +1,83 @@
+---
+import { PageHeader } from "@components/features/page-header";
+import { Icon } from "astro-icon/components";
+
+import { siteConfig } from "../config";
+import I18nKey from "../i18n/i18nKey";
+import { i18n } from "../i18n/translation";
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+
+export const prerender = true;
+
+if (!siteConfig.featurePages.aiRadar) {
+	return Astro.redirect("/404/");
+}
+
+const title = i18n(I18nKey.aiRadar);
+const subtitle = i18n(I18nKey.aiRadarSubtitle);
+
+const labels = {
+	status: i18n(I18nKey.aiRadarStatus),
+	stories: i18n(I18nKey.aiRadarStories),
+	models: i18n(I18nKey.aiRadarModels),
+	repos: i18n(I18nKey.aiRadarRepos),
+	updated: i18n(I18nKey.aiRadarUpdated),
+	loading: i18n(I18nKey.aiRadarLoading),
+	unavailable: i18n(I18nKey.aiRadarUnavailable),
+};
+---
+
+<MainGridLayout title={title} description={subtitle}>
+	<div
+		class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative min-h-32"
+	>
+		<div class="card-base z-10 px-6 sm:px-9 py-6 relative w-full">
+			<PageHeader title={title} subtitle={subtitle} />
+
+			<div
+				id="ai-radar"
+				data-labels={JSON.stringify(labels)}
+				class="mt-6"
+			>
+				<div
+					class="mb-6 flex flex-wrap items-center justify-between gap-3 text-sm"
+				>
+					<span id="ai-radar-updated" class="text-black/50 dark:text-white/50">
+						{labels.loading}
+					</span>
+					<button
+						id="ai-radar-refresh"
+						class="btn-regular flex h-9 items-center gap-2 rounded-lg px-4 font-bold active:scale-95"
+					>
+						<Icon
+							id="ai-radar-refresh-icon"
+							name="material-symbols:refresh"
+							class="text-[1.1rem]"
+						/>
+						{i18n(I18nKey.aiRadarRefresh)}
+					</button>
+				</div>
+
+				<div id="ai-radar-body" class="space-y-8"></div>
+			</div>
+		</div>
+	</div>
+</MainGridLayout>
+
+<style>
+	#ai-radar-refresh-icon.is-loading {
+		animation: ai-radar-spin 0.8s linear infinite;
+	}
+
+	@keyframes ai-radar-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#ai-radar-refresh-icon.is-loading {
+			animation: none;
+		}
+	}
+</style>

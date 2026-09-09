@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="板栗">
+  <!--
+    改用矢量路径绘制。此前用 <text> 渲染 🌰 字形，墨迹尺寸取决于系统 emoji
+    字体（Windows 是 Segoe UI Emoji，各平台不同），无法靠调字号稳定避开
+    viewBox 裁切，底部会被平切。配色沿用 Segoe UI Emoji 的板栗。
+  -->
+  <defs>
+    <clipPath id="chestnut-body">
+      <path d="M43 17C45 12 55 12 57 17 67 27 83 44 89 66 90 84 73 94 50 94 27 94 10 84 11 66 17 44 33 27 43 17Z" />
+    </clipPath>
+  </defs>
+  <path
+    d="M43 17C45 12 55 12 57 17 67 27 83 44 89 66 90 84 73 94 50 94 27 94 10 84 11 66 17 44 33 27 43 17Z"
+    fill="#CA5010"
+    stroke="#000000"
+    stroke-width="6"
+    stroke-linejoin="round"
+  />
+  <g clip-path="url(#chestnut-body)">
+    <path d="M45 21C46 18 54 18 55 21 64 30 78 46 84 63 74 67 63 68 50 68 37 68 26 67 16 63 22 46 36 30 45 21Z" fill="#F7630C" />
+    <ellipse cx="50" cy="99" rx="46" ry="25" fill="#F7B189" />
+  </g>
+</svg>

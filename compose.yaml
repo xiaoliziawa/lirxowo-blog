@@ -1,0 +1,29 @@
+services:
+  blog:
+    build:
+      context: .
+    image: lirxowo-blog:2026-09-08
+    container_name: lirxowo-blog
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - /opt/lirxowo-blog-assets/bing:/usr/share/nginx/html/bing:ro
+      - /opt/lirxowo-blog-assets/ai-radar:/usr/share/nginx/html/ai-radar-data:ro
+    mem_limit: 256m
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=16m
+      - /var/run:size=2m
+      - /tmp:size=8m
