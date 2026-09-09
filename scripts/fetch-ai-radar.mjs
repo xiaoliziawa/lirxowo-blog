@@ -21,7 +21,6 @@ const CODEX_RADAR_URL =
 	"https://codexradar.com/data/intelligence-efficiency.json";
 // 运行次数过少的样本 IQ 波动极大，排行里排除掉
 const CODEX_MIN_RUNS = 10;
-const CODEX_LIMIT = 60;
 
 const MODEL_LIMIT = 8;
 const REPO_WINDOW_DAYS = 14;
@@ -141,7 +140,6 @@ async function fetchCodex() {
 				Number.isFinite(Number(point.iq)),
 		)
 		.sort((a, b) => Number(b.iq) - Number(a.iq))
-		.slice(0, CODEX_LIMIT)
 		.map((point) => ({
 			model: point.model,
 			effort: point.effort,
