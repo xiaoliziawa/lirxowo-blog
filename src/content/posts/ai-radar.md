@@ -6,7 +6,7 @@ tags: [AI, ChatGPT, Claude]
 category: 技术
 ---
 
-AI雷达正式迁移完成了，采用的QQ群群友分享的codex rader项目
+AI雷达正式迁移完成了，采用的QQ群群友分享的codex radar项目
 
 因为塔菲在九月中旬服务器就到期了,ps:懒得续费（，不能再提供codex雷达服务了，所以我重新购入了一台新加坡服务器，把这个项目迁移到了我自己新的博客里面。
 
