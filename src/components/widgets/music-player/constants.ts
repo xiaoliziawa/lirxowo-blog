@@ -7,8 +7,17 @@ import type { Song } from "./types";
 export const STORAGE_KEY_VOLUME = "music-player-volume";
 export const STORAGE_KEY_TRACK = "music-player-track";
 
-// 由服务端扫描音乐目录生成，上传新歌后无需重新构建
-export const MUSIC_MANIFEST_URL = "/music/music.json";
+// nginx 直接输出该目录的 JSON 列表，上传新歌即刻可见，无需扫描脚本
+export const MUSIC_DIR_URL = "/music/";
+export const MUSIC_AUDIO_EXTENSIONS = [
+	".mp3",
+	".flac",
+	".m4a",
+	".ogg",
+	".opus",
+	".wav",
+];
+export const MUSIC_COVER_EXTENSIONS = [".webp", ".jpg", ".jpeg", ".png"];
 
 export const DEFAULT_VOLUME = 0.7;
 

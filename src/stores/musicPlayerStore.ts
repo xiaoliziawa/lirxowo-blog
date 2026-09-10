@@ -5,7 +5,9 @@ import {
 	DEFAULT_COVER_URL,
 	DEFAULT_SONG,
 	LOCAL_PLAYLIST,
-	MUSIC_MANIFEST_URL,
+	MUSIC_AUDIO_EXTENSIONS,
+	MUSIC_COVER_EXTENSIONS,
+	MUSIC_DIR_URL,
 	STORAGE_KEY_TRACK,
 	SKIP_ERROR_DELAY,
 	STORAGE_KEY_VOLUME,
@@ -356,17 +358,58 @@ class MusicPlayerStore {
 
 	private async fetchMusicManifest(): Promise<Song[]> {
 		try {
-			const response = await fetch(MUSIC_MANIFEST_URL, { cache: "no-cache" });
+			const response = await fetch(MUSIC_DIR_URL, { cache: "no-cache" });
 			if (!response.ok) {
 				throw new Error(`HTTP ${response.status}`);
 			}
-			const data = await response.json();
-			const tracks: Song[] = Array.isArray(data?.tracks) ? data.tracks : [];
+			const entries: { name?: string; type?: string }[] = await response.json();
+			const tracks = this.buildPlaylistFromDirectory(entries);
 			return tracks.length > 0 ? tracks : [...LOCAL_PLAYLIST];
 		} catch {
-			// 清单不可用时退回内置列表，不让播放器直接空掉
+			// 目录列表不可用时退回内置列表，不让播放器直接空掉
 			return [...LOCAL_PLAYLIST];
 		}
+	}
+
+	private buildPlaylistFromDirectory(
+		entries: { name?: string; type?: string }[],
+	): Song[] {
+		const names = entries
+			.filter((entry) => entry.type === "file" && typeof entry.name === "string")
+			.map((entry) => entry.name as string);
+		const available = new Set(names);
+
+		return names
+			.filter((name) =>
+				MUSIC_AUDIO_EXTENSIONS.some((ext) => name.toLowerCase().endsWith(ext)),
+			)
+			.sort((a, b) => a.localeCompare(b, "zh-CN"))
+			.map((name, index) => {
+				const basename = name.slice(0, name.lastIndexOf("."));
+				// 文件名形如「艺术家 - 曲名」时拆开，否则整体作为曲名
+				const separator = basename.indexOf(" - ");
+				const artist =
+					separator > 0
+						? basename.slice(0, separator).trim()
+						: i18n(Key.unknownArtist);
+				const title =
+					separator > 0 ? basename.slice(separator + 3).trim() : basename;
+				const cover = MUSIC_COVER_EXTENSIONS.map(
+					(ext) => `${basename}${ext}`,
+				).find((file) => available.has(file));
+
+				return {
+					id: index + 1,
+					title: title || basename,
+					artist: artist || i18n(Key.unknownArtist),
+					cover: cover
+						? `${MUSIC_DIR_URL}${encodeURIComponent(cover)}`
+						: DEFAULT_COVER_URL,
+					url: `${MUSIC_DIR_URL}${encodeURIComponent(name)}`,
+					// 时长由浏览器读取音频元数据后填入
+					duration: 0,
+				};
+			});
 	}
 
 	private loadTrackFromStorage(): number {
