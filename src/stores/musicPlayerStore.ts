@@ -5,6 +5,8 @@ import {
 	DEFAULT_COVER_URL,
 	DEFAULT_SONG,
 	LOCAL_PLAYLIST,
+	MUSIC_MANIFEST_URL,
+	STORAGE_KEY_TRACK,
 	SKIP_ERROR_DELAY,
 	STORAGE_KEY_VOLUME,
 } from "@/components/widgets/music-player/constants";
@@ -264,7 +266,7 @@ class MusicPlayerStore {
 				meting_id,
 			);
 		} else {
-			this.loadLocalPlaylist();
+			await this.loadLocalPlaylist();
 		}
 	}
 
@@ -339,12 +341,49 @@ class MusicPlayerStore {
 		};
 	}
 
-	private loadLocalPlaylist(): void {
-		this.state.playlist = [...LOCAL_PLAYLIST];
+	private async loadLocalPlaylist(): Promise<void> {
+		this.state.playlist = await this.fetchMusicManifest();
 		if (this.state.playlist.length === 0) {
 			this.showError("本地播放列表为空");
-		} else {
-			this.selectSong(this.state.playlist[0], false);
+			return;
+		}
+		// 恢复上次播放的曲目；歌单变短时回到第一首
+		const saved = this.loadTrackFromStorage();
+		const index = saved < this.state.playlist.length ? saved : 0;
+		this.state.currentIndex = index;
+		this.selectSong(this.state.playlist[index], false);
+	}
+
+	private async fetchMusicManifest(): Promise<Song[]> {
+		try {
+			const response = await fetch(MUSIC_MANIFEST_URL, { cache: "no-cache" });
+			if (!response.ok) {
+				throw new Error(`HTTP ${response.status}`);
+			}
+			const data = await response.json();
+			const tracks: Song[] = Array.isArray(data?.tracks) ? data.tracks : [];
+			return tracks.length > 0 ? tracks : [...LOCAL_PLAYLIST];
+		} catch {
+			// 清单不可用时退回内置列表，不让播放器直接空掉
+			return [...LOCAL_PLAYLIST];
+		}
+	}
+
+	private loadTrackFromStorage(): number {
+		try {
+			const saved = localStorage.getItem(STORAGE_KEY_TRACK);
+			const index = saved === null ? 0 : Number.parseInt(saved, 10);
+			return Number.isInteger(index) && index >= 0 ? index : 0;
+		} catch {
+			return 0;
+		}
+	}
+
+	private saveTrackToStorage(): void {
+		try {
+			localStorage.setItem(STORAGE_KEY_TRACK, String(this.state.currentIndex));
+		} catch {
+			/* localStorage 不可用时忽略 */
 		}
 	}
 
@@ -365,6 +404,7 @@ class MusicPlayerStore {
 		if (autoPlay) {
 			this.requestPlayback(false);
 		}
+		this.saveTrackToStorage();
 		this.broadcastState();
 	}
 

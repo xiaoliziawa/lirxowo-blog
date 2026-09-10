@@ -5,6 +5,10 @@ import xryxCover from "../../../assets/music/cover/xryx.webp?url";
 import type { Song } from "./types";
 
 export const STORAGE_KEY_VOLUME = "music-player-volume";
+export const STORAGE_KEY_TRACK = "music-player-track";
+
+// 由服务端扫描音乐目录生成，上传新歌后无需重新构建
+export const MUSIC_MANIFEST_URL = "/music/music.json";
 
 export const DEFAULT_VOLUME = 0.7;
 

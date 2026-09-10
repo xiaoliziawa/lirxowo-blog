@@ -10,6 +10,7 @@ services:
     volumes:
       - /opt/lirxowo-blog-assets/bing:/usr/share/nginx/html/bing:ro
       - /opt/lirxowo-blog-assets/ai-radar:/usr/share/nginx/html/ai-radar-data:ro
+      - /opt/lirxowo-blog-assets/music:/usr/share/nginx/html/music:ro
     mem_limit: 256m
     cpus: 1.0
     security_opt:

@@ -1,9 +1,9 @@
 import type { MusicPlayerConfig } from "../types/config";
 
-// 默认关闭示例音乐，避免自动加载未确认授权的音频。
+// 歌曲来自服务器 music 目录，清单由 scripts/scan-music.mjs 扫描生成
 export const musicPlayerConfig: MusicPlayerConfig = {
-	enable: false,
-	showFloatingPlayer: false,
+	enable: true,
+	showFloatingPlayer: true,
 	floatingEntryMode: "fab",
 	mode: "local",
 	meting_api: "",
