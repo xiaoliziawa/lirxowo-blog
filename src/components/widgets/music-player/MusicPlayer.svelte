@@ -632,12 +632,12 @@ onDestroy(() => {
 			}
 		}
 
-		:global(.cover-container img) {
+		:global(.cover-container .vinyl-wrapper) {
 			animation: spin-continuous 3s linear infinite;
 			animation-play-state: paused;
 		}
 
-		:global(.cover-container img.spinning) {
+		:global(.cover-container .vinyl-wrapper.spinning) {
 			animation-play-state: running;
 		}
 

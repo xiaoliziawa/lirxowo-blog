@@ -1,8 +1,7 @@
 <script lang="ts">
 import Icon from "@iconify/svelte";
 
-import { DEFAULT_COVER_URL } from "@/components/widgets/music-player/constants";
-import { resolveAssetUrl } from "@/utils/asset-url";
+import VinylDisc from "@/components/widgets/music-player/atoms/VinylDisc.svelte";
 import type { Song } from "../../music-player/types";
 
 interface Props {
@@ -31,12 +30,7 @@ const { song, isCurrent, isPlaying, onclick }: Props = $props();
 	aria-label={`播放 ${song.title} - ${song.artist}`}
 >
 	<div class="cover-shell">
-		<img
-			src={resolveAssetUrl(song.cover || DEFAULT_COVER_URL)}
-			alt={song.title}
-			loading="lazy"
-			class="item-cover"
-		/>
+		<VinylDisc cover={song.cover} />
 	</div>
 	<div class="content">
 		<div class="item-title" class:active={isCurrent}>{song.title}</div>
@@ -84,10 +78,9 @@ const { song, isCurrent, isPlaying, onclick }: Props = $props();
 		position: relative;
 		width: 2rem;
 		height: 2rem;
-		border-radius: 0.5rem;
+		border-radius: 50%;
 		overflow: hidden;
 		flex-shrink: 0;
-		background: var(--btn-regular-bg);
 	}
 
 	.item-cover {
