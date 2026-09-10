@@ -6,6 +6,7 @@ import type { Song } from "./types";
 
 export const STORAGE_KEY_VOLUME = "music-player-volume";
 export const STORAGE_KEY_TRACK = "music-player-track";
+export const STORAGE_KEY_AUTOPLAY = "music-player-autoplay";
 
 // nginx 直接输出该目录的 JSON 列表，上传新歌即刻可见，无需扫描脚本
 export const MUSIC_DIR_URL = "/music/";

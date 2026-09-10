@@ -8,6 +8,7 @@ import {
 	MUSIC_AUDIO_EXTENSIONS,
 	MUSIC_COVER_EXTENSIONS,
 	MUSIC_DIR_URL,
+	STORAGE_KEY_AUTOPLAY,
 	STORAGE_KEY_TRACK,
 	SKIP_ERROR_DELAY,
 	STORAGE_KEY_VOLUME,
@@ -353,7 +354,7 @@ class MusicPlayerStore {
 		const saved = this.loadTrackFromStorage();
 		const index = saved < this.state.playlist.length ? saved : 0;
 		this.state.currentIndex = index;
-		this.selectSong(this.state.playlist[index], false);
+		this.selectSong(this.state.playlist[index], this.loadAutoplayPreference());
 	}
 
 	private async fetchMusicManifest(): Promise<Song[]> {
@@ -402,14 +403,29 @@ class MusicPlayerStore {
 					id: index + 1,
 					title: title || basename,
 					artist: artist || i18n(Key.unknownArtist),
-					cover: cover
-						? `${MUSIC_DIR_URL}${encodeURIComponent(cover)}`
-						: DEFAULT_COVER_URL,
+					cover: cover ? `${MUSIC_DIR_URL}${encodeURIComponent(cover)}` : "",
 					url: `${MUSIC_DIR_URL}${encodeURIComponent(name)}`,
 					// 时长由浏览器读取音频元数据后填入
 					duration: 0,
 				};
 			});
+	}
+
+	// 用户手动暂停后下次不再自动播放，重新点播放则恢复；默认开启
+	private loadAutoplayPreference(): boolean {
+		try {
+			return localStorage.getItem(STORAGE_KEY_AUTOPLAY) !== "0";
+		} catch {
+			return true;
+		}
+	}
+
+	private saveAutoplayPreference(enabled: boolean): void {
+		try {
+			localStorage.setItem(STORAGE_KEY_AUTOPLAY, enabled ? "1" : "0");
+		} catch {
+			/* localStorage 不可用时忽略 */
+		}
 	}
 
 	private loadTrackFromStorage(): number {
@@ -533,8 +549,10 @@ class MusicPlayerStore {
 			this.state.willAutoPlay = false;
 			this.resetErrorRetryBudget();
 			this.audio.pause();
+			this.saveAutoplayPreference(false);
 		} else {
 			this.requestPlayback(true);
+			this.saveAutoplayPreference(true);
 		}
 	}
 

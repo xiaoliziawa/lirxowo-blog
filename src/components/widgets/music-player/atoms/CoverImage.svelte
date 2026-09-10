@@ -1,10 +1,9 @@
 <script lang="ts">
 import Icon from "@iconify/svelte";
 
-import { DEFAULT_COVER_URL } from "@/components/widgets/music-player/constants";
-import { resolveAssetUrl } from "@/utils/asset-url";
 import Key from "../../../../i18n/i18nKey";
 import { i18n } from "../../../../i18n/translation";
+import VinylDisc from "./VinylDisc.svelte";
 
 interface Props {
 	cover: string;
@@ -49,9 +48,7 @@ const containerClasses = {
 			<Icon icon="eos-icons:loading" class="text-white text-lg" />
 		{:else if isPlaying}
 			<div class="flex space-x-0.5">
-				<div
-					class="w-0.5 h-3 bg-white rounded-full animate-pulse"
-				></div>
+				<div class="w-0.5 h-3 bg-white rounded-full animate-pulse"></div>
 				<div
 					class="w-0.5 h-4 bg-white rounded-full animate-pulse"
 					style="animation-delay: 150ms;"
@@ -62,10 +59,7 @@ const containerClasses = {
 				></div>
 			</div>
 		{:else}
-			<Icon
-				icon="material-symbols:music-note"
-				class="text-white text-lg"
-			/>
+			<Icon icon="material-symbols:music-note" class="text-white text-lg" />
 		{/if}
 	</div>
 {:else if interactive}
@@ -84,55 +78,45 @@ const containerClasses = {
 			? i18n(Key.musicPlayerPause)
 			: i18n(Key.musicPlayerPlay)}
 	>
-		<img
-			src={resolveAssetUrl(cover || DEFAULT_COVER_URL)}
-			alt={i18n(Key.musicPlayerCover)}
-			loading="lazy"
-			fetchpriority="low"
-			class="w-full h-full object-cover transition-transform duration-300"
+		<div
+			class="vinyl-wrapper w-full h-full"
 			class:spinning={isPlaying && !isLoading}
 			class:animate-pulse={isLoading}
-		/>
+		>
+			<VinylDisc {cover} />
+		</div>
 		<div
 			class="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
 		>
 			{#if isLoading}
 				<Icon icon="eos-icons:loading" class="text-white text-xl" />
 			{:else if isPlaying}
-				<Icon
-					icon="material-symbols:pause"
-					class="text-white text-xl"
-				/>
+				<Icon icon="material-symbols:pause" class="text-white text-xl" />
 			{:else}
-				<Icon
-					icon="material-symbols:play-arrow"
-					class="text-white text-xl"
-				/>
+				<Icon icon="material-symbols:play-arrow" class="text-white text-xl" />
 			{/if}
 		</div>
 	</div>
 {:else}
 	<div class={containerClasses[size]}>
-		<img
-			src={resolveAssetUrl(cover || DEFAULT_COVER_URL)}
-			alt={i18n(Key.musicPlayerCover)}
-			loading="lazy"
-			fetchpriority="low"
-			class="w-full h-full object-cover transition-transform duration-300"
+		<div
+			class="vinyl-wrapper w-full h-full"
 			class:spinning={isPlaying && !isLoading}
 			class:animate-pulse={isLoading}
-		/>
+		>
+			<VinylDisc {cover} />
+		</div>
 	</div>
 {/if}
 
 <style>
-	.cover-container img {
+	.cover-container .vinyl-wrapper {
 		animation: spin-continuous 3s linear infinite;
 		animation-play-state: paused;
 		transform-origin: center;
 	}
 
-	.cover-container img.spinning {
+	.cover-container .vinyl-wrapper.spinning {
 		animation-play-state: running;
 	}
 
@@ -142,6 +126,12 @@ const containerClasses = {
 		}
 		to {
 			transform: rotate(360deg);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.cover-container .vinyl-wrapper {
+			animation: none;
 		}
 	}
 </style>
