@@ -1,6 +1,6 @@
 ---
 title: AI雷达
-published: 2026-09-10
+published: 2026-09-09T22:30:00+08:00
 description: AI雷达完工
 tags: [AI, ChatGPT, Claude]
 category: 技术
